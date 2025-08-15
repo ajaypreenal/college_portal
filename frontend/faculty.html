@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Faculty Dashboard - St Teresa College of Engineering</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background-image: url('assets/facultybg1.jpg');
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            background-size: cover;
+            font-family: Arial, sans-serif;
+        }
+        .dashboard-card { 
+            background: white; 
+            border-radius: 10px; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            margin-bottom: 20px;
+            padding: 20px;
+        }
+        .student-checkbox {
+            margin: 5px 0;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">St Teresa College of Engineering</a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3" id="facultyInfo">Loading...</span>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="dashboard-card">
+            <h3>Welcome, <span id="facultyName">Faculty</span></h3>
+            <p><strong>Department:</strong> <span id="facultyDepartment">-</span></p>
+        </div>
+
+        <!-- Attendance Marking Section -->
+        <div class="dashboard-card">
+            <h4>Mark Attendance</h4>
+            
+            <!-- Class and Course Selection -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="className" class="form-label">Class</label>
+                    <select id="className" class="form-select" required>
+                        <option value="">Select Class</option>
+                        <option value="CSE-A">CSE-A</option>
+                        <option value="CSE-B">CSE-B</option>
+                        <option value="ECE-A">ECE-A</option>
+                        <option value="ECE-B">ECE-B</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="courseName" class="form-label">Course</label>
+                    <select id="courseName" class="form-select" required>
+                        <option value="">Select Course</option>
+                        <option value="Computer Science">Computer Science</option>
+                        <option value="Mathematics">Mathematics</option>
+                        <option value="Physics">Physics</option>
+                        <option value="English">English</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label for="attendanceDate" class="form-label">Date</label>
+                    <input type="date" id="attendanceDate" class="form-control" required>
+                </div>
+            </div>
+
+            <!-- Load Students Button -->
+            <div class="row mb-3">
+                <div class="col-12">
+                    <button id="loadStudentsBtn" class="btn btn-primary" onclick="loadStudents()">
+                        Load Students
+                    </button>
+                </div>
+            </div>
+
+            <!-- Students List -->
+            <div id="studentsSection" style="display: none;">
+                <h5>Students in <span id="selectedClass">-</span></h5>
+                <div id="studentsList" class="row">
+                    <!-- Students will be loaded here -->
+                </div>
+                
+                <!-- Mark Attendance Button -->
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <button id="markAttendanceBtn" class="btn btn-success" onclick="markAttendance()">
+                            Mark Attendance
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Message -->
+            <div id="loadingMessage" class="text-center text-muted py-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading students...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div id="errorMessage" class="text-center text-danger py-4" style="display: none;">
+                <h6>Error</h6>
+                <p id="errorText">Something went wrong. Please try again.</p>
+            </div>
+        </div>
+
+        <!-- Attendance Records Section -->
+        <div class="dashboard-card">
+            <h4>Recent Attendance Records</h4>
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Class</th>
+                            <th>Course</th>
+                            <th>Students Present</th>
+                        </tr>
+                    </thead>
+                    <tbody id="attendanceTableBody">
+                        <!-- Attendance records will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentFaculty = null;
+        let currentToken = null;
+        let currentStudents = [];
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Faculty dashboard loading...');
+            initializeDashboard();
+        });
+
+        // Initialize dashboard
+        function initializeDashboard() {
+            try {
+                // Check if user is logged in
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+                
+                console.log('Token present:', !!token);
+                console.log('User present:', !!user);
+                
+                if (!token) {
+                    alert('Please login first');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                currentToken = token;
+                
+                // Load faculty profile
+                loadFacultyProfile();
+                
+                // Set default date to today
+                document.getElementById('attendanceDate').value = new Date().toISOString().split('T')[0];
+                
+                // Add event listeners
+                addEventListeners();
+                
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                alert('Error loading dashboard. Please try again.');
+            }
+        }
+
+        // Load faculty profile
+        async function loadFacultyProfile() {
+            try {
+                console.log('Loading faculty profile...');
+                
+                const response = await fetch('/api/faculty/me', {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                console.log('Profile response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Profile data received:', data);
+                
+                currentFaculty = data.faculty;
+                
+                // Update profile display
+                document.getElementById('facultyName').textContent = currentFaculty.name;
+                document.getElementById('facultyDepartment').textContent = currentFaculty.department || 'N/A';
+                document.getElementById('facultyInfo').textContent = `Logged in as: ${currentFaculty.name}`;
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showError('Failed to load faculty profile: ' + error.message);
+            }
+        }
+
+        // Load students for selected class
+        async function loadStudents() {
+            try {
+                const className = document.getElementById('className').value;
+                const courseName = document.getElementById('courseName').value;
+                const date = document.getElementById('attendanceDate').value;
+
+                if (!className || !courseName || !date) {
+                    alert('Please select class, course, and date');
+                    return;
+                }
+
+                showLoading(true);
+                console.log('Loading students for class:', className);
+                
+                const response = await fetch(`/api/attendance/students/class/${className}`, {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const students = await response.json();
+                console.log('Students loaded:', students);
+                
+                currentStudents = students;
+                displayStudents(students);
+                document.getElementById('selectedClass').textContent = className;
+                document.getElementById('studentsSection').style.display = 'block';
+                showSuccess();
+                
+            } catch (error) {
+                console.error('Error loading students:', error);
+                showError('Failed to load students: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display students with checkboxes
+        function displayStudents(students) {
+            const studentsList = document.getElementById('studentsList');
+            studentsList.innerHTML = '';
+
+            if (students.length === 0) {
+                studentsList.innerHTML = '<div class="col-12"><p class="text-muted">No students found in this class.</p></div>';
+                return;
+            }
+
+            students.forEach(student => {
+                const studentDiv = document.createElement('div');
+                studentDiv.className = 'col-md-6 col-lg-4';
+                studentDiv.innerHTML = `
+                    <div class="student-checkbox">
+                        <input type="checkbox" id="student_${student._id}" value="${student._id}" class="form-check-input">
+                        <label for="student_${student._id}" class="form-check-label">
+                            ${student.name} (Roll: ${student.rollNumber || 'N/A'})
+                        </label>
+                    </div>
+                `;
+                studentsList.appendChild(studentDiv);
+            });
+        }
+
+        // Mark attendance
+        async function markAttendance() {
+            try {
+                const className = document.getElementById('className').value;
+                const courseName = document.getElementById('courseName').value;
+                const date = document.getElementById('attendanceDate').value;
+
+                if (!className || !courseName || !date) {
+                    alert('Please select class, course, and date');
+                    return;
+                }
+
+                // Get selected students
+                const selectedStudents = [];
+                currentStudents.forEach(student => {
+                    const checkbox = document.getElementById(`student_${student._id}`);
+                    if (checkbox && checkbox.checked) {
+                        selectedStudents.push({
+                            student: student._id, // Use the actual ObjectId
+                            course: courseName,
+                            date: date,
+                            status: 'Present'
+                        });
+                });
+
+                if (selectedStudents.length === 0) {
+                    alert('Please select at least one student');
+                    return;
+                }
+
+                showLoading(true);
+                console.log('Marking attendance for:', selectedStudents.length, 'students');
+
+                // Mark attendance for each selected student
+                for (const attendance of selectedStudents) {
+                    const response = await fetch('/api/attendance', {
+                        method: 'POST',
+                        headers: { 
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${currentToken}`
+                        },
+                        body: JSON.stringify(attendance)
+                    });
+
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(errorData.message || 'Failed to mark attendance');
+                    }
+                }
+
+                alert(`Attendance marked successfully for ${selectedStudents.length} students!`);
+                
+                // Reset form
+                document.getElementById('className').value = '';
+                document.getElementById('courseName').value = '';
+                document.getElementById('studentsSection').style.display = 'none';
+                currentStudents = [];
+                
+            } catch (error) {
+                console.error('Error marking attendance:', error);
+                showError('Failed to mark attendance: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Add event listeners
+        function addEventListeners() {
+            // Class selection change
+            document.getElementById('className').addEventListener('change', function() {
+                document.getElementById('studentsSection').style.display = 'none';
+                currentStudents = [];
+            });
+
+            // Course selection change
+            document.getElementById('courseName').addEventListener('change', function() {
+                document.getElementById('studentsSection').style.display = 'none';
+                currentStudents = [];
+            });
+        }
+
+        // Show/hide loading message
+        function showLoading(show) {
+            document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // Show error message
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+        }
+
+        // Show success (hide error)
+        function showSuccess() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('facultyId');
+            localStorage.removeItem('userId');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

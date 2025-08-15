@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title> St Teresa College of Engineering Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        header {
+            background: #0d6efd;
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+        }
+        .container {
+            margin-top: 40px;
+        }
+        .card {
+            transition: 0.3s;
+        }
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"> St Teresa College of Engineering</a>
+            <button class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#nav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="nav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link active" href="index.html">Home</a></li>
+                    <li class="nav-item"><a class="nav-link" href="attendance.html">Attendance</a></li>
+                    <li class="nav-item"><a class="nav-link" href="login.html">Login</a></li>
+                    <li class="nav-item"><a class="nav-link" href="student_dashboard.html">Dashboard</a></li>
+
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Header -->
+    <header>
+        <h1>Welcome to  St Teresa College of Engineering Portal</h1>
+        <p>Manage students, mark attendance, and more</p>
+    </header>
+
+    <!-- Main Content -->
+    <div class="container">
+        <div class="row g-4">
+            <div class="col-md-4">
+                <div class="card text-center p-3">
+                    <h3>Students</h3>
+                    <p>Manage student details and academic records.</p>
+                    <a href="student.html" class="btn btn-primary">View Students</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-center p-3">
+                    <h3>Attendance</h3>
+                    <p>Mark and view student attendance records.</p>
+                    <a href="attendance.html" class="btn btn-success">Mark Attendance</a>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <div class="card text-center p-3">
+                    <h3>Login</h3>
+                    <p>Access your account and manage college data.</p>
+                    <a href="login.html" class="btn btn-warning">Login</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-dark text-white text-center mt-5 p-3">
+        &copy; 2025  St Teresa College of Engineering. All rights reserved.
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

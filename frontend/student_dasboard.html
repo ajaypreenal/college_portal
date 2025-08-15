@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Student Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <style>
+    body { background-color: #f8f9fa; }
+    .dashboard-card { padding: 20px; border-radius: 10px; background: white; box-shadow: 0 0 10px rgba(0,0,0,0.1); }
+  </style>
+</head>
+<body>
+  <nav class="navbar navbar-dark bg-primary">
+    <div class="container">
+      <a class="navbar-brand" href="index.html">Student Dashboard</a>
+    </div>
+  </nav>
+
+  <div class="container my-4">
+    <div class="dashboard-card">
+      <h3>Welcome, <span id="studentName"></span></h3>
+      <p>Email: <span id="studentEmail"></span></p>
+      <p>Class: <span id="studentClass"></span></p>
+      <p>Roll No: <span id="studentRoll"></span></p>
+      <hr>
+      <h5>Attendance Summary</h5>
+      <p>Present Days: <span id="presentDays"></span></p>
+      <p>Total Days: <span id="totalDays"></span></p>
+      <p>Attendance %: <span id="attendancePercent"></span>%</p>
+    </div>
+
+        <!-- Attendance Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">My Attendance</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label for="attendanceCourse" class="form-label">Course</label>
+                        <select id="attendanceCourse" class="form-select">
+                            <option value="">All Courses</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Physics">Physics</option>
+                            <option value="English">English</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="startDate" class="form-label">Start Date</label>
+                        <input type="date" id="startDate" class="form-control">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="endDate" class="form-label">End Date</label>
+                        <input type="date" id="endDate" class="form-control">
+                    </div>
+                </div>
+                <button id="loadAttendanceBtn" class="btn btn-primary mb-3">Load Attendance</button>
+                
+                <div id="attendanceSummary" class="mb-3" style="display: none;">
+                    <div class="row">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 id="totalClasses">0</h4>
+                                <small class="text-muted">Total Classes</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-success bg-opacity-10 rounded">
+                                <h4 id="presentCount" class="text-success">0</h4>
+                                <small class="text-muted">Present</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-danger bg-opacity-10 rounded">
+                                <h4 id="absentCount" class="text-danger">0</h4>
+                                <small class="text-muted">Absent</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                                <h4 id="attendancePercentage" class="text-primary">0%</h4>
+                                <small class="text-muted">Percentage</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="attendanceRecords" style="display: none;">
+                    <h6>Attendance Records:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Course</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="attendanceTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+  </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+  const token = localStorage.getItem('token');
+  if (!token) {
+    alert('Login required');
+    window.location.href = "login.html";
+    return;
+  }
+
+  try {
+    // Load student profile
+    const res = await fetch('/api/students/me', {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    const data = await res.json();
+
+    if (res.ok) {
+      document.getElementById('studentName').textContent = data.student.name;
+      document.getElementById('studentEmail').textContent = data.student.email;
+      document.getElementById('studentClass').textContent = data.student.class || 'N/A';
+      document.getElementById('studentRoll').textContent = data.student.rollNumber || 'N/A';
+      
+      // Load initial attendance data
+      await loadStudentAttendance();
+    } else {
+      alert(data.message || 'Error fetching data');
+    }
+  } catch (err) {
+    console.error(err);
+    alert('Error loading dashboard');
+  }
+});
+
+// Function to load student attendance
+async function loadStudentAttendance() {
+  const token = localStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    // Get current student ID from the profile or localStorage
+    const studentId = getCurrentStudentId();
+    if (!studentId) {
+      console.log('Student ID not found, using current user context');
+      return;
+    }
+
+    const course = document.getElementById('attendanceCourse').value;
+    const startDate = document.getElementById('startDate').value;
+    const endDate = document.getElementById('endDate').value;
+    
+    let url = `/api/attendance/student/${studentId}`;
+    const params = new URLSearchParams();
+    
+    if (course) params.append('course', course);
+    if (startDate) params.append('startDate', startDate);
+    if (endDate) params.append('endDate', endDate);
+    
+    if (params.toString()) {
+      url += '?' + params.toString();
+    }
+
+    const response = await fetch(url, { 
+      headers: { Authorization: `Bearer ${token}` } 
+    });
+
+    if (response.ok) {
+      const data = await response.json();
+      displayAttendanceSummary(data.summary);
+      displayAttendanceRecords(data.records);
+      
+      // Update the main dashboard summary
+      updateDashboardSummary(data.summary);
+    } else {
+      console.error('Failed to load attendance:', response.statusText);
+    }
+  } catch (error) {
+    console.error('Error loading attendance:', error);
+  }
+}
+
+function displayAttendanceSummary(summary) {
+  if (summary) {
+    document.getElementById('totalClasses').textContent = summary.totalClasses;
+    document.getElementById('presentCount').textContent = summary.presentCount;
+    document.getElementById('absentCount').textContent = summary.absentCount;
+    document.getElementById('attendancePercentage').textContent = summary.attendancePercentage + '%';
+    document.getElementById('attendanceSummary').style.display = 'block';
+  }
+}
+
+function displayAttendanceRecords(records) {
+  const tbody = document.getElementById('attendanceTableBody');
+  tbody.innerHTML = '';
+  
+  if (!records || records.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="3" class="text-center">No attendance records found</td></tr>';
+  } else {
+    records.forEach(record => {
+      const row = document.createElement('tr');
+      row.innerHTML = `
+        <td>${new Date(record.date).toLocaleDateString()}</td>
+        <td>${record.course || 'N/A'}</td>
+        <td><span class="badge ${record.status === 'Present' ? 'bg-success' : 'bg-danger'}">${record.status}</span></td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+  
+  document.getElementById('attendanceRecords').style.display = 'block';
+}
+
+function updateDashboardSummary(summary) {
+  if (summary) {
+    document.getElementById('presentDays').textContent = summary.presentCount;
+    document.getElementById('totalDays').textContent = summary.totalClasses;
+    document.getElementById('attendancePercent').textContent = summary.attendancePercentage;
+  }
+}
+
+function getCurrentStudentId() {
+  // Try to get from localStorage or extract from token
+  return localStorage.getItem('studentId') || localStorage.getItem('userId');
+}
+
+// Set default dates (current month)
+function setDefaultDates() {
+  const today = new Date();
+  const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+  const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+  
+  document.getElementById('startDate').value = firstDay.toISOString().split('T')[0];
+  document.getElementById('endDate').value = lastDay.toISOString().split('T')[0];
+}
+
+// Add event listeners
+document.addEventListener('DOMContentLoaded', () => {
+  setDefaultDates();
+  
+  // Add event listener for attendance button
+  const loadAttendanceBtn = document.getElementById('loadAttendanceBtn');
+  if (loadAttendanceBtn) {
+    loadAttendanceBtn.addEventListener('click', loadStudentAttendance);
+  }
+  
+  // Add event listener for course filter
+  const courseSelect = document.getElementById('attendanceCourse');
+  if (courseSelect) {
+    courseSelect.addEventListener('change', loadStudentAttendance);
+  }
+  
+  // Add event listeners for date changes
+  const startDateInput = document.getElementById('startDate');
+  const endDateInput = document.getElementById('endDate');
+  if (startDateInput) startDateInput.addEventListener('change', loadStudentAttendance);
+  if (endDateInput) endDateInput.addEventListener('change', loadStudentAttendance);
+});
+</script>
+
+<!-- Include the student.js file for additional functionality -->
+<script src="assets/js/student.js"></script>
+</body>
+</html>

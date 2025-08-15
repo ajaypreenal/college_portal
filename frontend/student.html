@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - St Teresa College of Engineering</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { 
+            background-color: #f8f9fa; 
+            font-family: Arial, sans-serif;
+        }
+        .dashboard-card { 
+            padding: 20px; 
+            border-radius: 10px; 
+            background: white; 
+            box-shadow: 0 0 10px rgba(0,0,0,0.1); 
+            margin-bottom: 20px;
+        }
+        .status-badge {
+            font-size: 0.8rem;
+            padding: 0.25rem 0.5rem;
+        }
+        .navbar-brand {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-dark bg-primary">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">St Teresa College of Engineering</a>
+            <div class="navbar-nav ms-auto">
+                <span class="navbar-text me-3" id="studentInfo">Loading...</span>
+                <button class="btn btn-outline-light btn-sm" onclick="logout()">Logout</button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container my-4">
+        <!-- Student Profile Card -->
+        <div class="dashboard-card">
+            <h3>Welcome, <span id="studentName">Student</span></h3>
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Email:</strong> <span id="studentEmail">-</span></p>
+                    <p><strong>Class:</strong> <span id="studentClass">-</span></p>
+                </div>
+                <div class="col-md-6">
+                    <p><strong>Roll No:</strong> <span id="studentRoll">-</span></p>
+                    <p><strong>Course:</strong> <span id="studentCourse">-</span></p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Summary Card -->
+        <div class="dashboard-card">
+            <h5>Attendance Summary</h5>
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h4 id="presentDays">0</h4>
+                        <small class="text-muted">Present Days</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h4 id="totalDays">0</h4>
+                        <small class="text-muted">Total Days</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-light rounded">
+                        <h4 id="absentDays">0</h4>
+                        <small class="text-muted">Absent Days</small>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="text-center p-3 bg-primary bg-opacity-10 rounded">
+                        <h4 id="attendancePercent">0%</h4>
+                        <small class="text-muted">Attendance %</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Attendance Details Section -->
+        <div class="dashboard-card">
+            <h5>My Attendance Records</h5>
+            
+            <!-- Simple Controls -->
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <button id="loadAllBtn" class="btn btn-primary w-100">Load All Attendance</button>
+                </div>
+                <div class="col-md-4">
+                    <button id="loadThisMonthBtn" class="btn btn-success w-100">Load This Month</button>
+                </div>
+                <div class="col-md-4">
+                    <button id="refreshBtn" class="btn btn-info w-100">Refresh Data</button>
+                </div>
+            </div>
+            
+            <!-- Loading Message -->
+            <div id="loadingMessage" class="text-center text-muted py-4" style="display: none;">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Loading attendance data...</p>
+            </div>
+            
+            <!-- Attendance Records Table -->
+            <div id="attendanceRecords" style="display: none;">
+                <div class="table-responsive">
+                    <table class="table table-striped">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Course</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="attendanceTableBody">
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- No Records Message -->
+            <div id="noRecords" class="text-center text-muted py-4" style="display: none;">
+                <h6>No attendance records found</h6>
+                <p>This might mean no attendance has been marked yet, or there's an issue with the data.</p>
+            </div>
+            
+            <!-- Error Message -->
+            <div id="errorMessage" class="text-center text-danger py-4" style="display: none;">
+                <h6>Error loading attendance</h6>
+                <p id="errorText">Something went wrong. Please try again.</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variables
+        let currentStudent = null;
+        let currentToken = null;
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Student dashboard loading...');
+            initializeDashboard();
+        });
+
+        // Initialize dashboard
+        function initializeDashboard() {
+            try {
+                // Check if user is logged in
+                const token = localStorage.getItem('token');
+                const user = localStorage.getItem('user');
+                
+                console.log('Token present:', !!token);
+                console.log('User present:', !!user);
+                
+                if (!token) {
+                    alert('Please login first');
+                    window.location.href = 'login.html';
+                    return;
+                }
+
+                currentToken = token;
+                
+                // Load student profile
+                loadStudentProfile();
+                
+                // Add event listeners
+                addEventListeners();
+                
+            } catch (error) {
+                console.error('Error initializing dashboard:', error);
+                alert('Error loading dashboard. Please try again.');
+            }
+        }
+
+        // Load student profile
+        async function loadStudentProfile() {
+            try {
+                showLoading(true);
+                console.log('Loading student profile...');
+                
+                const response = await fetch('/api/students/me', {
+                    headers: { 'Authorization': `Bearer ${currentToken}` }
+                });
+
+                console.log('Profile response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                console.log('Profile data received:', data);
+                
+                currentStudent = data.student;
+                
+                // Update profile display
+                document.getElementById('studentName').textContent = currentStudent.name;
+                document.getElementById('studentEmail').textContent = currentStudent.email;
+                document.getElementById('studentClass').textContent = currentStudent.class || 'N/A';
+                document.getElementById('studentRoll').textContent = currentStudent.rollNumber || 'N/A';
+                document.getElementById('studentCourse').textContent = currentStudent.course || 'N/A';
+                document.getElementById('studentInfo').textContent = `Logged in as: ${currentStudent.name}`;
+                
+                // Load initial attendance
+                loadAllAttendance();
+                
+            } catch (error) {
+                console.error('Error loading profile:', error);
+                showError('Failed to load student profile: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Load all attendance
+        async function loadAllAttendance() {
+            try {
+                if (!currentStudent) {
+                    console.log('Student profile not loaded yet');
+                    return;
+                }
+
+                showLoading(true);
+                console.log('Loading all attendance...');
+                
+                const url = `/api/attendance/student/${currentStudent._id}`;
+                console.log('Fetching from:', url);
+
+                const response = await fetch(url, { 
+                    headers: { Authorization: `Bearer ${currentToken}` } 
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Attendance data received:', data);
+                    
+                    displayAttendanceRecords(data.records);
+                    updateDashboardSummary(data.summary);
+                    showSuccess();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error('Error loading attendance:', error);
+                showError('Failed to load attendance: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Load this month's attendance
+        async function loadThisMonthAttendance() {
+            try {
+                if (!currentStudent) return;
+
+                showLoading(true);
+                
+                const today = new Date();
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                
+                const url = `/api/attendance/student/${currentStudent._id}?startDate=${firstDay.toISOString().split('T')[0]}&endDate=${lastDay.toISOString().split('T')[0]}`;
+                
+                const response = await fetch(url, { 
+                    headers: { Authorization: `Bearer ${currentToken}` } 
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    displayAttendanceRecords(data.records);
+                    updateDashboardSummary(data.summary);
+                    showSuccess();
+                } else {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+            } catch (error) {
+                console.error('Error loading monthly attendance:', error);
+                showError('Failed to load monthly attendance: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Display attendance records
+        function displayAttendanceRecords(records) {
+            const tbody = document.getElementById('attendanceTableBody');
+            const noRecords = document.getElementById('noRecords');
+            const attendanceRecords = document.getElementById('attendanceRecords');
+            
+            tbody.innerHTML = '';
+            
+            if (!records || records.length === 0) {
+                noRecords.style.display = 'block';
+                attendanceRecords.style.display = 'none';
+                return;
+            }
+            
+            noRecords.style.display = 'none';
+            attendanceRecords.style.display = 'block';
+            
+            records.forEach(record => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td>${new Date(record.date).toLocaleDateString()}</td>
+                    <td>${record.course || 'N/A'}</td>
+                    <td>
+                        <span class="badge ${record.status === 'Present' ? 'bg-success' : 'bg-danger'} status-badge">
+                            ${record.status}
+                        </span>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        // Update dashboard summary
+        function updateDashboardSummary(summary) {
+            if (summary) {
+                document.getElementById('presentDays').textContent = summary.presentCount;
+                document.getElementById('totalDays').textContent = summary.totalClasses;
+                document.getElementById('absentDays').textContent = summary.absentCount;
+                document.getElementById('attendancePercent').textContent = summary.attendancePercentage + '%';
+            }
+        }
+
+        // Add event listeners
+        function addEventListeners() {
+            document.getElementById('loadAllBtn').addEventListener('click', loadAllAttendance);
+            document.getElementById('loadThisMonthBtn').addEventListener('click', loadThisMonthAttendance);
+            document.getElementById('refreshBtn').addEventListener('click', loadStudentProfile);
+        }
+
+        // Show/hide loading message
+        function showLoading(show) {
+            document.getElementById('loadingMessage').style.display = show ? 'block' : 'none';
+            document.getElementById('attendanceRecords').style.display = 'none';
+            document.getElementById('noRecords').style.display = 'none';
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // Show error message
+        function showError(message) {
+            document.getElementById('errorText').textContent = message;
+            document.getElementById('errorMessage').style.display = 'block';
+            document.getElementById('attendanceRecords').style.display = 'none';
+            document.getElementById('noRecords').style.display = 'none';
+        }
+
+        // Show success (attendance loaded)
+        function showSuccess() {
+            document.getElementById('errorMessage').style.display = 'none';
+        }
+
+        // Logout function
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('studentId');
+            localStorage.removeItem('userId');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

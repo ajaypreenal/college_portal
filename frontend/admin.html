@@ -1,0 +1,182 @@
+<!doctype html>
+<html>
+<head>
+  <style>
+    h2{
+        text-align:center;
+      }
+      h4{
+        text-align:center;
+      }
+      table{
+        text-align:center;
+      }
+    body {
+  background-image: url('assets/studentbg1.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+  </style>
+  <meta charset="utf-8">
+  <title>Admin - St Teresa College of Engineering</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+<nav class="navbar navbar-dark bg-primary"><div class="container"><a class="navbar-brand" href="index.html">St Teresa College of Engineering</a></div></nav>
+<div class="container py-4">
+  <h2>Admin Dashboard</h2>
+  <br>
+  <div class="row">
+    <div class="col-md-6">
+      <h4>Students</h4>
+      <table class="table table-striped" id="studentsTable">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Class</th>
+            <th>Roll Number</th>
+            <th>Course</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+      <button class="btn btn-success mb-2" id="addStudentBtn">Add Student</button>
+    </div>
+    <div class="col-md-6">
+      <h4>Courses</h4>
+      <table class="table table-striped" id="coursesTable"><thead><tr><th>Code</th><th>Title</th><th>Credits</th><th>Actions</th></tr></thead><tbody></tbody></table>
+      <button class="btn btn-success mb-2" id="addCourseBtn">Add Course</button>
+    </div>
+  </div>
+
+        <!-- Attendance Management Section -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Attendance Management</h5>
+            </div>
+            <div class="card-body">
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label for="adminClassSelect" class="form-label">Class</label>
+                        <select id="adminClassSelect" class="form-select">
+                            <option value="">All Classes</option>
+                            <option value="CSE-A">CSE-A</option>
+                            <option value="CSE-B">CSE-B</option>
+                            <option value="ECE-A">ECE-A</option>
+                            <option value="ECE-B">ECE-B</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="adminCourseSelect" class="form-label">Course</label>
+                        <select id="adminCourseSelect" class="form-select">
+                            <option value="">All Courses</option>
+                            <option value="Computer Science">Computer Science</option>
+                            <option value="Mathematics">Mathematics</option>
+                            <option value="Physics">Physics</option>
+                            <option value="English">English</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="adminDateSelect" class="form-label">Date</label>
+                        <input type="date" id="adminDateSelect" class="form-control">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">&nbsp;</label>
+                        <button id="loadAdminAttendanceBtn" class="btn btn-primary d-block w-100">Load Report</button>
+                    </div>
+                </div>
+                
+                <div id="adminAttendanceReport" style="display: none;">
+                    <h6>Attendance Report:</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Student Name</th>
+                                    <th>Class</th>
+                                    <th>Roll Number</th>
+                                    <th>Course</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminAttendanceTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+</div>
+
+<!-- Modals -->
+<div class="modal" tabindex="-1" id="studentModal">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Add Student</h5>
+        <button class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body">
+        <form id="studentForm">
+          <div class="mb-3">
+            <label for="s_name" class="form-label">Full Name</label>
+            <input id="s_name" class="form-control" placeholder="Enter full name" required>
+          </div>
+          <div class="mb-3">
+            <label for="s_email" class="form-label">Email</label>
+            <input id="s_email" type="email" class="form-control" placeholder="Enter email address" required>
+          </div>
+          <div class="mb-3">
+            <label for="s_password" class="form-label">Password</label>
+            <input id="s_password" type="password" class="form-control" placeholder="Enter password" required>
+          </div>
+          <div class="mb-3">
+            <label for="s_class" class="form-label">Class</label>
+            <select id="s_class" class="form-select" required>
+              <option value="">Select Class</option>
+              <option value="CSE-A">CSE-A</option>
+              <option value="CSE-B">CSE-B</option>
+              <option value="ECE-A">ECE-A</option>
+              <option value="ECE-B">ECE-B</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label for="s_rollNumber" class="form-label">Roll Number</label>
+            <input id="s_rollNumber" type="number" class="form-control" placeholder="Enter roll number">
+          </div>
+          <div class="mb-3">
+            <label for="s_course" class="form-label">Course</label>
+            <select id="s_course" class="form-select">
+              <option value="">Select Course</option>
+              <option value="Computer Science">Computer Science</option>
+              <option value="Mathematics">Mathematics</option>
+              <option value="Physics">Physics</option>
+              <option value="English">English</option>
+            </select>
+          </div>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary">Save Student</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal" tabindex="-1" id="courseModal"><div class="modal-dialog"><div class="modal-content"><div class="modal-header"><h5 class="modal-title">Add Course</h5><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">
+<form id="courseForm"><input id="c_code" class="form-control mb-2" placeholder="Code" required><input id="c_title" class="form-control mb-2" placeholder="Title" required><input id="c_credits" class="form-control mb-2" placeholder="Credits"><button class="btn btn-primary">Save</button></form>
+</div></div></div></div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="assets/js/admin.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

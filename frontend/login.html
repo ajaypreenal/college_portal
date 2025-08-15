@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+    <style>
+body {
+  background-image: url('assets/indexbg.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+</style>
+  <meta charset="utf-8">
+  <title>Login - St Teresa College of Engineering</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css">
+  <style>
+body {
+  background-image: url('assets/login.jpg');
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  background-size: cover;
+}
+</style>
+</head>
+<body class="d-flex align-items-center min-vh-100">
+  <div class="container">
+    <div class="card mx-auto" style="max-width:420px;">
+      <div class="card-body">
+        <h3 class="card-title text-center">Sign in</h3>
+        <form id="loginForm">
+          <div class="mb-3">
+            <label class="form-label">Email</label>
+            <input id="email" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Password</label>
+            <input id="password" type="password" class="form-control" required>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Role</label>
+            <select id="role" class="form-select">
+              <option value="student">Student</option>
+              <option value="faculty">Faculty</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+          <button class="btn btn-primary w-100">Login</button>
+        </form>
+        <div id="loginMsg" class="mt-3 text-center"></div>
+      </div>
+    </div>
+  </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="assets/js/auth.js"></script>
+<script>
+$("#loginForm").submit(function(e){
+    e.preventDefault();
+
+    const email = $("#email").val().trim();
+    const password = $("#password").val();
+    const role = $("#role").val();
+
+    fetch("/api/auth/login", { // ✅ Use relative URL
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }) // role not needed for login
+    })
+    .then(async res => {
+        const data = await res.json();
+        if (!res.ok) {
+            $("#loginMsg").text(data.message || "Server error").css("color","red");
+            return;
+        }
+
+        // ✅ Save user + token
+        localStorage.setItem("user", JSON.stringify(data.user));
+        localStorage.setItem("token", data.token);
+        
+        // ✅ Also save student ID for easier access
+        if (data.user.role === "student") {
+            localStorage.setItem("studentId", data.user.id);
+        }
+
+        // ✅ Redirect based on role
+        if (data.user.role === "admin") location.href = "admin.html";
+        else if (data.user.role === "faculty") location.href = "faculty.html";
+        else location.href = "student.html";
+    })
+    .catch(err => {
+        console.error(err);
+        $("#loginMsg").text("Network error").css("color","red");
+    });
+});
+</script>
+
+</body>
+</html>
